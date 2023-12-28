@@ -1,0 +1,50 @@
+name: "Github Action Packer"
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PACKER_VERSION: "1.9.4"
+
+    steps:
+      - name: "Repository Checkoout"
+        uses: actions/checkout@v3
+
+      - name: "Setup packer"
+        uses: hashicorp/setup-packer@main
+        with:
+           version: ${{ env.PACKER_VERSION }}
+
+      - name: "packer init"
+        run: packer init .
+        working-directory: ./packer/
+
+      - name: "Packer validate"
+        run: packer validate -var-file="prod.pkrvars.hcl" .
+        working-directory: ./packer/
+
+      - name: "Packer Format"
+        run: packer fmt .
+        working-directory: ./packer/
+
+
+      - name: "Packer build image"
+        run: packer build -var-file="prod.pkrvars.hcl" .
+        working-directory: ./packer/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_SECRET_ID }}
+          AWS_DEFAULT_REGION: ${{ secrets.PROD_AWS_REGION }}
+
+
+      - name: "List Current working directory"
+        run: |
+          pwd
+          ls -al
